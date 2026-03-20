@@ -96,19 +96,24 @@ def webhook():
         return jsonify({"ok": True}), 200
 
     pag = buscar_pagamento_mp(payment_id)
+    print(f"[WEBHOOK] payment_id={payment_id} status={pag.get('status') if pag else 'None'}")
     if not pag or pag.get("status") != "approved":
         return jsonify({"ok": True}), 200
 
     # Lê metadata que o trainer enviou
     meta     = pag.get("metadata", {})
+    print(f"[WEBHOOK] metadata={meta}")
     username = meta.get("username")
     plano    = meta.get("plano")
     dias     = int(meta.get("dias", 0))
+    print(f"[WEBHOOK] username={username} plano={plano} dias={dias}")
 
     if not username or not plano or not dias:
+        print(f"[WEBHOOK] ERRO: metadata incompleto")
         return jsonify({"error": "missing metadata"}), 400
 
     ok = atualizar_usuario(username, plano, dias)
+    print(f"[WEBHOOK] atualizar_usuario={ok}")
     return jsonify({"ok": ok}), 200 if ok else 500
 
 @app.route("/health", methods=["GET"])
