@@ -71,24 +71,23 @@ def atualizar_usuario(username, plano, dias):
 def webhook():
     body = request.get_json(silent=True) or {}
 
-    # Valida assinatura apenas em live_mode (producao)
-    if body.get("live_mode", True):
-        sig_header = request.headers.get("x-signature", "")
-        ts = ""
-        v1 = ""
-        for part in sig_header.split(","):
-            if part.startswith("ts="):
-                ts = part[3:]
-            if part.startswith("v1="):
-                v1 = part[3:]
+    # Valida assinatura em todos os casos
+    sig_header = request.headers.get("x-signature", "")
+    ts = ""
+    v1 = ""
+    for part in sig_header.split(","):
+        if part.startswith("ts="):
+            ts = part[3:]
+        if part.startswith("v1="):
+            v1 = part[3:]
 
-        request_id = request.headers.get("x-request-id", "")
-        data_id    = request.args.get("data.id", "")
-        manifest   = f"id:{data_id};request-id:{request_id};ts:{ts};"
+    request_id = request.headers.get("x-request-id", "")
+    data_id    = request.args.get("data.id", "")
+    manifest   = f"id:{data_id};request-id:{request_id};ts:{ts};"
 
-        expected = hmac.new(WEBHOOK_SECRET.encode(), manifest.encode(), hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(expected, v1):
-            return jsonify({"error": "invalid signature"}), 401
+    expected = hmac.new(WEBHOOK_SECRET.encode(), manifest.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, v1):
+        return jsonify({"error": "invalid signature"}), 401
     if body.get("type") != "payment":
         return jsonify({"ok": True}), 200
 
