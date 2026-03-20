@@ -71,23 +71,33 @@ def atualizar_usuario(username, plano, dias):
 def webhook():
     body = request.get_json(silent=True) or {}
 
-    # Valida assinatura em todos os casos
-    sig_header = request.headers.get("x-signature", "")
+    # Valida assinatura
+    sig_header  = request.headers.get("x-signature", "")
+    request_id  = request.headers.get("x-request-id", "")
+    # data.id pode vir como query param ou no body
+    data_id = request.args.get("data.id") or str(body.get("data", {}).get("id", ""))
+
     ts = ""
     v1 = ""
     for part in sig_header.split(","):
+        part = part.strip()
         if part.startswith("ts="):
             ts = part[3:]
-        if part.startswith("v1="):
+        elif part.startswith("v1="):
             v1 = part[3:]
 
-    request_id = request.headers.get("x-request-id", "")
-    data_id    = request.args.get("data.id", "")
-    manifest   = f"id:{data_id};request-id:{request_id};ts:{ts};"
+    manifest = f"id:{data_id};request-id:{request_id};ts:{ts};"
+    print(f"[WEBHOOK] manifest={manifest}")
+    print(f"[WEBHOOK] sig_header={sig_header}")
 
-    expected = hmac.new(WEBHOOK_SECRET.encode(), manifest.encode(), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(expected, v1):
-        return jsonify({"error": "invalid signature"}), 401
+    try:
+        expected = hmac.new(WEBHOOK_SECRET.encode(), manifest.encode(), hashlib.sha256).hexdigest()
+        if WEBHOOK_SECRET and not hmac.compare_digest(expected, v1):
+            print(f"[WEBHOOK] Assinatura invalida expected={expected} got={v1}")
+            return jsonify({"error": "invalid signature"}), 401
+    except Exception as e:
+        print(f"[WEBHOOK] Erro assinatura: {e}")
+        return jsonify({"error": "signature error"}), 401
     if body.get("type") != "payment":
         return jsonify({"ok": True}), 200
 
