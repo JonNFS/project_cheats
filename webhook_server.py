@@ -1,12 +1,3 @@
-"""
-JonCheats — Servidor Webhook Mercado Pago
-Deploy no Railway: https://railway.app
-Variáveis de ambiente necessárias:
-  MP_ACCESS_TOKEN   = APP_USR-...
-  SUPABASE_URL      = https://xxx.supabase.co
-  SUPABASE_KEY      = service_role key
-  WEBHOOK_SECRET    = string aleatória que você define (ex: joncheatssecret123)
-"""
 import os
 import hmac
 import hashlib
